@@ -1,0 +1,39 @@
+{
+  "name": "@janiscommerce/api-save",
+  "version": "1.0.0",
+  "description": "A package to handle JANIS Views Save APIs",
+  "main": "index.js",
+  "scripts": {
+    "test": "export TEST_ENV=true; mocha --exit -R nyan --recursive tests/",
+    "test-ci": "nyc --reporter=html --reporter=text mocha --recursive tests/",
+    "watch-test": "export TEST_ENV=true; mocha --exit -R nyan -w --recursive tests/",
+    "coverage": "nyc npm test",
+    "lint": "eslint index.js lib/ tests/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/janis-commerce/api-save.git"
+  },
+  "author": "Janis",
+  "license": "ISC",
+  "homepage": "https://github.com/janis-commerce/api-save#readme",
+  "devDependencies": {
+    "husky": "^2.4.1",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.17.3",
+    "mocha": "^5.2.0",
+    "nyc": "^13.1.0",
+    "sinon": "^7.3.2"
+  },
+  "files": [
+    "lib/"
+  ],
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "@janiscommerce/api-view": "^1.2.0",
+    "@janiscommerce/model-controller": "^1.4.0"
+  }
+}
