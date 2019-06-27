@@ -1,8 +1,8 @@
 'use strict';
 
-const { ApiSave, RelationshipGenerator } = require('./lib');
+const { ApiSaveData, RelationshipGenerator } = require('./lib');
 
 module.exports = {
-	ApiSave,
+	ApiSaveData,
 	RelationshipGenerator
 };

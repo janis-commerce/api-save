@@ -6,7 +6,7 @@ const { struct } = require('superstruct');
 
 const sandbox = require('sinon').createSandbox();
 
-const { ApiSave } = require('..');
+const { ApiSaveData } = require('..');
 const { ApiSaveError } = require('../lib');
 
 describe('API Save', () => {
@@ -15,7 +15,7 @@ describe('API Save', () => {
 		sandbox.restore();
 	});
 
-	class MyApiSaveWithStruct extends ApiSave {
+	class MyApiSaveWithStruct extends ApiSaveData {
 		getStruct() {
 			return struct({
 				id: 'number?',
@@ -27,7 +27,7 @@ describe('API Save', () => {
 		}
 	}
 
-	class MyApiSaveWithStructAndRelationships extends ApiSave {
+	class MyApiSaveWithStructAndRelationships extends ApiSaveData {
 
 		static get relationshipsParameters() {
 			return {
@@ -60,7 +60,7 @@ describe('API Save', () => {
 		}
 	}
 
-	class MyApiSaveWithStructAndComplexRelationships extends ApiSave {
+	class MyApiSaveWithStructAndComplexRelationships extends ApiSaveData {
 
 		static get relationshipsParameters() {
 			return {
@@ -99,7 +99,7 @@ describe('API Save', () => {
 
 	describe('Static relationshipsParameters getter', () => {
 		it('Should return and object', () => {
-			assert.deepStrictEqual(typeof ApiSave.relationshipsParameters, 'object');
+			assert.deepStrictEqual(typeof ApiSaveData.relationshipsParameters, 'object');
 		});
 	});
 
@@ -110,7 +110,7 @@ describe('API Save', () => {
 			const controllerStub = sandbox.stub(Controller, 'getInstance');
 			controllerStub.returns({});
 
-			const apiSave = new ApiSave();
+			const apiSave = new ApiSaveData();
 			apiSave.entity = 'some-entity';
 			apiSave.pathParameters = ['invalidId'];
 			apiSave.data = ['notValidData'];
@@ -153,7 +153,7 @@ describe('API Save', () => {
 			const controllerStub = sandbox.stub(Controller, 'getInstance');
 			controllerStub.throws('Controller does not exist');
 
-			const apiSave = new ApiSave();
+			const apiSave = new ApiSaveData();
 			apiSave.entity = 'some-entity';
 			apiSave.pathParameters = [10];
 			apiSave.data = {};
@@ -977,7 +977,7 @@ describe('API Save', () => {
 
 		it('Should throw if there are not parameters for a given relationship', async () => {
 
-			class MyApiSaveWithMisconfiguredRelationships extends ApiSave {
+			class MyApiSaveWithMisconfiguredRelationships extends ApiSaveData {
 
 				getStruct() {
 					return struct({
