@@ -14,11 +14,11 @@ npm install @janiscommerce/api-save
 ```js
 'use strict';
 
-const { ApiSave } = require('@janiscommerce/api-save');
+const { ApiSaveData } = require('@janiscommerce/api-save');
 
-class MyApiSave extends ApiSave {
+class MyApiSaveData extends ApiSaveData {
 
 }
 
-module.exports = MyApiSave;
+module.exports = MyApiSaveData;
 ```
