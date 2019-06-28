@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.0] - 2019-06-28
+### Added
+- ApiSaveData now accepts a `format()` hook to manipulate main data before saving
+
 ## [1.0.1] - 2019-06-27
 ### Changed
 - ApiSave renamed to ApiSaveData

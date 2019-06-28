@@ -15,8 +15,42 @@ npm install @janiscommerce/api-save
 'use strict';
 
 const { ApiSaveData } = require('@janiscommerce/api-save');
+const { Controller } = require('@janiscommerce/model-controller');
+const { struct } = require('superstruct');
 
 class MyApiSaveData extends ApiSaveData {
+
+	static get relationshipsParameters() {
+		return {
+			children: {
+				controller: Controller.getInstance('some-relationship-entity'),
+				mainIdentifierField: 'dbFieldForMainEntity',
+				secondaryIdentifierField: 'dbFieldForRelatedEntity',
+				shouldClean: false
+			}
+		};
+	}
+
+	getStruct() {
+		return struct({
+			id: 'number',
+			data: struct.partial({
+				name: 'string',
+				description: 'string?',
+				status: 'number'
+			}),
+			relationships: struct.partial({
+				children: ['number']
+			})
+		});
+	}
+
+	format({ someField, ...restoOfTheRecord }) {
+		return {
+			...restoOfTheRecord,
+			someField: `prefix-${someField}`
+		};
+	}
 
 }
 

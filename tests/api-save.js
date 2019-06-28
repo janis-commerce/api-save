@@ -1022,4 +1022,60 @@ describe('API Save', () => {
 		});
 	});
 
+	describe('Process with format method', () => {
+
+		it('Should format the data properly before saving', async () => {
+
+			class MyApiSaveWithStructAndFormat extends ApiSaveData {
+				getStruct() {
+					return struct({
+						id: 'number?',
+						main: struct.partial({
+							name: 'string'
+						}),
+						relationships: struct.partial({})
+					});
+				}
+
+				format(record) {
+					return {
+						...record,
+						newField: 'foo'
+					};
+				}
+			}
+
+
+			const fakeInsert = sandbox.fake.returns(10);
+
+			const controllerStub = sandbox.stub(Controller, 'getInstance');
+			controllerStub.returns({
+				insert: fakeInsert
+			});
+
+			const apiSave = new MyApiSaveWithStructAndFormat();
+			apiSave.entity = 'some-entity';
+			apiSave.pathParameters = [];
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await apiSave.process();
+
+			sandbox.assert.calledOnce(fakeInsert);
+			sandbox.assert.calledWithExactly(fakeInsert, {
+				name: 'The name',
+				newField: 'foo'
+			});
+
+			assert.deepStrictEqual(apiSave.response.body, {
+				id: 10
+			});
+		});
+	});
+
 });
