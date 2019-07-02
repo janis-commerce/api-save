@@ -251,6 +251,32 @@ describe('API Save', () => {
 			});
 		});
 
+		it('Should throw if Save Main fails to save', async () => {
+
+			const fakeInsert = sandbox.fake.returns(false);
+
+			const controllerStub = sandbox.stub(Controller, 'getInstance');
+			controllerStub.returns({
+				insert: fakeInsert
+			});
+
+			const apiSave = new MyApiSaveWithStruct();
+			apiSave.entity = 'some-entity';
+			apiSave.pathParameters = [];
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await assert.rejects(() => apiSave.process(), {
+				name: 'ApiSaveError',
+				code: ApiSaveError.codes.INTERNAL_ERROR
+			});
+		});
+
 		it('Should insert the record and set the ID in the response body', async () => {
 
 			const fakeInsert = sandbox.fake.returns(10);
@@ -312,9 +338,35 @@ describe('API Save', () => {
 			});
 		});
 
+		it('Should throw if Save Main fails to update', async () => {
+
+			const fakeUpdate = sandbox.fake.returns(false);
+
+			const controllerStub = sandbox.stub(Controller, 'getInstance');
+			controllerStub.returns({
+				update: fakeUpdate
+			});
+
+			const apiSave = new MyApiSaveWithStruct();
+			apiSave.entity = 'some-entity';
+			apiSave.pathParameters = [10];
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await assert.rejects(() => apiSave.process(), {
+				name: 'ApiSaveError',
+				code: ApiSaveError.codes.INTERNAL_ERROR
+			});
+		});
+
 		it('Should update the record and set the ID in the response body', async () => {
 
-			const fakeUpdate = sandbox.fake();
+			const fakeUpdate = sandbox.fake.returns(10);
 
 			const controllerStub = sandbox.stub(Controller, 'getInstance');
 			controllerStub.returns({
