@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.1.2] - 2019-07-02
+### Fixed
+- Version bump for already published version 1.1.1
+
 ## [1.1.1] - 2019-07-02
 ### Fixed
 - ApiSaveData now checks for not saved MainData
