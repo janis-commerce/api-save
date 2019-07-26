@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Now save APIs rely on API package, so they can be handled as common REST APIs
 
+### Fixed
+- README updated
+
 ## [2.0.0] - 2019-07-18
 ### Changed
 - Browse APIs paths changed. Now MS_PATH env var is taken into account.

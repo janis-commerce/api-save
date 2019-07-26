@@ -15,15 +15,16 @@ npm install @janiscommerce/api-save
 'use strict';
 
 const { ApiSaveData } = require('@janiscommerce/api-save');
-const { Controller } = require('@janiscommerce/model-controller');
 const { struct } = require('superstruct');
+
+const MyRelatedModel = require('../../models/my-related-model');
 
 class MyApiSaveData extends ApiSaveData {
 
 	static get relationshipsParameters() {
 		return {
 			children: {
-				controller: Controller.getInstance('some-relationship-entity'),
+				ModelClass: MyRelatedModel,
 				mainIdentifierField: 'dbFieldForMainEntity',
 				secondaryIdentifierField: 'dbFieldForRelatedEntity',
 				shouldClean: false
