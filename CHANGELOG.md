@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [2.1.0] - 2019-07-26
+### Added
+- Support for client specific models instanciation
+
+### Changed
+- Now save APIs rely on API package, so they can be handled as common REST APIs
+
 ## [2.0.0] - 2019-07-18
 ### Changed
 - Browse APIs paths changed. Now MS_PATH env var is taken into account.
