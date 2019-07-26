@@ -1076,4 +1076,75 @@ describe('API Save', () => {
 		});
 	});
 
+	describe('Process with client specific model', () => {
+
+		it('Should instance the models through the client getInstance method when creating a record', async () => {
+
+			const clientMock = {
+				getInstance: sandbox.fake.returns(new Model())
+			};
+
+			const fakeInsert = sandbox.fake.returns('10');
+
+			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
+			getModelInstanceStub.returns({
+				insert: fakeInsert
+			});
+
+			const apiSave = new MyApiSaveWithStructAndRelationships();
+			apiSave.endpoint = '/api/some-entity';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo',
+				relatedStuff: ['stuff-one', 'stuff-two'],
+				otherRelatedStuff: ['other-stuff-one', 'other-stuff-two']
+			};
+			apiSave.client = clientMock;
+
+			const validation = await apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await apiSave.process();
+
+			sandbox.assert.calledTwice(clientMock.getInstance);
+			sandbox.assert.calledWithExactly(clientMock.getInstance, Model);
+		});
+
+		it('Should instance the models through the client getInstance method when updating a record', async () => {
+
+			Model.prototype.multiInsert.returns();
+			Model.prototype.multiRemove.returns();
+			Model.prototype.get.returns([]);
+
+			const clientMock = {
+				getInstance: sandbox.fake.returns(new Model())
+			};
+
+			const fakeUpdate = sandbox.fake.returns('10');
+
+			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
+			getModelInstanceStub.returns({
+				update: fakeUpdate
+			});
+
+			const apiSave = new MyApiSaveWithStructAndRelationships();
+			apiSave.endpoint = '/api/some-entity/10';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo',
+				relatedStuff: ['stuff-one', 'stuff-two'],
+				otherRelatedStuff: ['other-stuff-one', 'other-stuff-two']
+			};
+			apiSave.client = clientMock;
+
+			const validation = await apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await apiSave.process();
+
+			sandbox.assert.calledTwice(clientMock.getInstance);
+			sandbox.assert.calledWithExactly(clientMock.getInstance, Model);
+		});
+	});
+
 });
