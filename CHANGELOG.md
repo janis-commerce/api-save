@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [2.2.0] - 2019-07-31
+### Changed
+- Now the validation struct can return a simple object, not a struct function.
+
+### Fixed
+- README updated and improved
+
 ## [2.1.1] - 2019-07-31
 ### Fixed
 - Default struct fixed so it now returns no relationships
