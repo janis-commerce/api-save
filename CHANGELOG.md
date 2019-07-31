@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [2.1.1] - 2019-07-31
+### Fixed
+- Default struct fixed so it now returns no relationships
+
 ## [2.1.0] - 2019-07-26
 ### Added
 - Support for client specific models instanciation

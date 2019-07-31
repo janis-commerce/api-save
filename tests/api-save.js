@@ -206,6 +206,44 @@ describe('API Save', () => {
 		});
 	});
 
+	describe('Process with the default struct', async () => {
+
+		it('Should save every field as main data, and none of them as relationships', async () => {
+
+			const fakeInsert = sandbox.fake.returns('10');
+
+			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
+			getModelInstanceStub.returns({
+				insert: fakeInsert
+			});
+
+			const apiSave = new ApiSaveData();
+			apiSave.endpoint = '/api/some-entity';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = await apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await apiSave.process();
+
+			sandbox.assert.calledOnce(fakeInsert);
+			sandbox.assert.calledWithExactly(fakeInsert, {
+				name: 'The name',
+				otherField: 'foo'
+			});
+
+			assert.deepStrictEqual(apiSave.response.body, {
+				id: '10'
+			});
+
+			assert.strictEqual(apiSave.hasRelationships(), false);
+		});
+
+	});
+
 	describe('Process new record without relationships', async () => {
 
 		it('Should throw if Save Main throws', async () => {
