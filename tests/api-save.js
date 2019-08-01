@@ -21,14 +21,19 @@ describe('API Save', () => {
 	});
 
 	class MyApiSaveWithStruct extends ApiSaveData {
-		getStruct() {
-			return struct({
-				id: 'string?',
-				main: struct.partial({
-					name: 'string'
-				}),
-				relationships: struct.partial({})
+
+		static get idStruct() {
+			return 'string?';
+		}
+
+		static get mainStruct() {
+			return struct.partial({
+				name: 'string'
 			});
+		}
+
+		static get relationshipsStruct() {
+			return struct.partial({});
 		}
 	}
 
@@ -51,16 +56,20 @@ describe('API Save', () => {
 			};
 		}
 
-		getStruct() {
-			return struct({
-				id: 'string?',
-				main: struct.partial({
-					name: 'string'
-				}),
-				relationships: struct.partial({
-					relatedStuff: ['string'],
-					otherRelatedStuff: ['string']
-				})
+		static get idStruct() {
+			return 'string?';
+		}
+
+		static get mainStruct() {
+			return struct.partial({
+				name: 'string'
+			});
+		}
+
+		static get relationshipsStruct() {
+			return struct.partial({
+				relatedStuff: ['string'],
+				otherRelatedStuff: ['string']
 			});
 		}
 	}
@@ -84,20 +93,24 @@ describe('API Save', () => {
 			};
 		}
 
-		getStruct() {
-			return struct({
-				id: 'string?',
-				main: struct.partial({
-					name: 'string'
-				}),
-				relationships: struct.partial({
-					relatedStuff: ['string'],
-					otherRelatedStuff: struct.list([{
-						id: 'number',
-						title: 'string',
-						comment: 'string?'
-					}])
-				})
+		static get idStruct() {
+			return 'string?';
+		}
+
+		static get mainStruct() {
+			return struct.partial({
+				name: 'string'
+			});
+		}
+
+		static get relationshipsStruct() {
+			return struct.partial({
+				relatedStuff: ['string'],
+				otherRelatedStuff: struct.list([{
+					id: 'number',
+					title: 'string',
+					comment: 'string?'
+				}])
 			});
 		}
 	}
@@ -1018,15 +1031,19 @@ describe('API Save', () => {
 
 			class MyApiSaveWithMisconfiguredRelationships extends ApiSaveData {
 
-				getStruct() {
-					return struct({
-						id: 'string?',
-						main: struct.partial({
-							name: 'string'
-						}),
-						relationships: struct.partial({
-							badRelationship: ['string']
-						})
+				static get idStruct() {
+					return 'string?';
+				}
+
+				static get mainStruct() {
+					return struct.partial({
+						name: 'string'
+					});
+				}
+
+				static get relationshipsStruct() {
+					return struct.partial({
+						badRelationship: ['string']
 					});
 				}
 			}
@@ -1064,14 +1081,18 @@ describe('API Save', () => {
 		it('Should format the data properly before saving', async () => {
 
 			class MyApiSaveWithStructAndFormat extends ApiSaveData {
-				getStruct() {
-					return struct({
-						id: 'string?',
-						main: struct.partial({
-							name: 'string'
-						}),
-						relationships: struct.partial({})
+				static get idStruct() {
+					return 'string?';
+				}
+
+				static get mainStruct() {
+					return struct.partial({
+						name: 'string'
 					});
+				}
+
+				static get relationshipsStruct() {
+					return struct.partial({});
 				}
 
 				format(record) {

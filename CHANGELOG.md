@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [3.0.0] - 2019-08-01
+### Changed
+- Now the validation struct is defined as 3 optional getters (BREAKING CHANGE). See README for new documentation.
+
 ## [2.2.0] - 2019-07-31
 ### Changed
 - Now the validation struct can return a simple object, not a struct function.
