@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [3.0.1] - 2019-08-06
+### Fixed
+- Client models not work as expected
+
 ## [3.0.0] - 2019-08-01
 ### Changed
 - Now the validation struct is defined as 3 optional getters (BREAKING CHANGE). See README for new documentation.
