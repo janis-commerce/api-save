@@ -24,7 +24,7 @@ class MyApiSaveData extends ApiSaveData {
 	static get relationshipsParameters() {
 		return {
 			children: {
-				ModelClass: MyRelatedModel,
+				modelClass: MyRelatedModel,
 				mainIdentifierField: 'dbFieldForMainEntity',
 				secondaryIdentifierField: 'dbFieldForRelatedEntity',
 				shouldClean: false
@@ -73,7 +73,7 @@ If you don't have any relationship, there's no need to implement it.
 
 This getter must return an object mapping the name of the field that contains the relationship (must be a key in the struct's `relationships` property) to the parameters of that relationship.
 The parameters contain the following properties:
-- ModelClass: The class of the model that should save this relationship
+- modelClass: The class of the model that should save this relationship
 - mainIdentifierField: The field name where the main ID should be saved
 - secondaryIdentifierField: The field name where the related ID should be saved
 - shouldClean: Indicates if previuos relationships should be removed. Optional, defaults to `false`
