@@ -254,7 +254,6 @@ describe('API Save', () => {
 
 			assert.strictEqual(apiSave.hasRelationships(), false);
 		});
-
 	});
 
 	describe('Process new record without relationships', async () => {
@@ -281,6 +280,32 @@ describe('API Save', () => {
 			await assert.rejects(() => apiSave.process(), {
 				name: 'ApiSaveError',
 				code: ApiSaveError.codes.INTERNAL_ERROR
+			});
+		});
+
+		it('Should throw if Save Main throws with nested exception', async () => {
+
+			const nestedException = { name: 'TypeError', code: 99, message: 'previous message of nested exception' };
+
+			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
+			getModelInstanceStub.returns({
+				insert: sandbox.stub().throws(nestedException)
+			});
+
+			const apiSave = new MyApiSaveWithStruct();
+			apiSave.endpoint = '/api/some-entity';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = await apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await assert.rejects(() => apiSave.process(), {
+				name: 'ApiSaveError',
+				code: ApiSaveError.codes.INTERNAL_ERROR,
+				previousError: { name: 'TypeError', code: 99, message: 'previous message of nested exception' }
 			});
 		});
 
@@ -323,6 +348,39 @@ describe('API Save', () => {
 			apiSave.data = {
 				name: 'The name',
 				otherField: 'foo'
+			};
+
+			const validation = await apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await apiSave.process();
+
+			sandbox.assert.calledOnce(fakeInsert);
+			sandbox.assert.calledWithExactly(fakeInsert, {
+				name: 'The name'
+			});
+
+			assert.deepStrictEqual(apiSave.response.body, {
+				id: '10'
+			});
+		});
+
+		it('Should insert the record and set the ID in the response body without saving relationships', async () => {
+
+			const fakeInsert = sandbox.fake.returns('10');
+
+			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
+			getModelInstanceStub.returns({
+				insert: fakeInsert
+			});
+
+			const apiSave = new MyApiSaveWithStructAndRelationships();
+			apiSave.endpoint = '/api/some-entity';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo',
+				relatedStuff: [],
+				otherRelatedStuff: []
 			};
 
 			const validation = await apiSave.validate();
@@ -523,6 +581,38 @@ describe('API Save', () => {
 			await assert.rejects(() => apiSave.process(), {
 				name: 'ApiSaveError',
 				code: ApiSaveError.codes.INTERNAL_ERROR
+			});
+
+			sandbox.assert.calledOnce(fakeUpdate);
+		});
+
+		it('Should throw if relationship save throws with nested exception', async () => {
+
+			Model.prototype.multiInsert.throws({ name: 'TypeError', code: 99, message: 'previous message of nested exception' });
+			Model.prototype.get.returns([]);
+
+			const fakeUpdate = sandbox.fake.returns('10');
+
+			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
+			getModelInstanceStub.returns({
+				update: fakeUpdate
+			});
+
+			const apiSave = new MyApiSaveWithStructAndRelationships();
+			apiSave.endpoint = '/api/some-entity/10';
+			apiSave.data = {
+				name: 'The name',
+				relatedStuff: ['stuff-one', 'stuff-two'],
+				otherRelatedStuff: ['other-stuff']
+			};
+
+			const validation = await apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await assert.rejects(() => apiSave.process(), {
+				name: 'ApiSaveError',
+				code: ApiSaveError.codes.INTERNAL_ERROR,
+				previousError: { name: 'TypeError', code: 99, message: 'previous message of nested exception' }
 			});
 
 			sandbox.assert.calledOnce(fakeUpdate);
