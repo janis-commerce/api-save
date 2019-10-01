@@ -285,11 +285,9 @@ describe('API Save', () => {
 
 		it('Should throw if Save Main throws with nested exception', async () => {
 
-			const nestedException = { name: 'TypeError', code: 99, message: 'previous message of nested exception' };
-
 			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
 			getModelInstanceStub.returns({
-				insert: sandbox.stub().throws(nestedException)
+				insert: sandbox.stub().throws(new Error('Some error'))
 			});
 
 			const apiSave = new MyApiSaveWithStruct();
@@ -304,8 +302,7 @@ describe('API Save', () => {
 
 			await assert.rejects(() => apiSave.process(), {
 				name: 'ApiSaveError',
-				code: ApiSaveError.codes.INTERNAL_ERROR,
-				previousError: { name: 'TypeError', code: 99, message: 'previous message of nested exception' }
+				code: ApiSaveError.codes.INTERNAL_ERROR
 			});
 		});
 
@@ -588,7 +585,7 @@ describe('API Save', () => {
 
 		it('Should throw if relationship save throws with nested exception', async () => {
 
-			Model.prototype.multiInsert.throws({ name: 'TypeError', code: 99, message: 'previous message of nested exception' });
+			Model.prototype.multiInsert.throws(new Error('Some error'));
 			Model.prototype.get.returns([]);
 
 			const fakeUpdate = sandbox.fake.returns('10');
@@ -611,8 +608,7 @@ describe('API Save', () => {
 
 			await assert.rejects(() => apiSave.process(), {
 				name: 'ApiSaveError',
-				code: ApiSaveError.codes.INTERNAL_ERROR,
-				previousError: { name: 'TypeError', code: 99, message: 'previous message of nested exception' }
+				code: ApiSaveError.codes.INTERNAL_ERROR
 			});
 
 			sandbox.assert.calledOnce(fakeUpdate);
