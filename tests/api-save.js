@@ -1,23 +1,56 @@
 'use strict';
 
 const assert = require('assert');
-const Model = require('@janiscommerce/model');
+const path = require('path');
+
+const mockRequire = require('mock-require');
 const { struct } = require('superstruct');
 
-const sandbox = require('sinon').createSandbox();
+const sinon = require('sinon');
 
-const { ApiSaveData } = require('..');
-const { ApiSaveError } = require('../lib');
-const ApiSaveValidator = require('../lib/api-save-validator');
+const { ApiSaveData, ApiSaveError } = require('../lib');
+
+const modelPath = path.join(process.cwd(), process.env.MS_PATH || '', 'models', 'some-entity');
 
 describe('API Save', () => {
 
+	class Model {
+
+		async get() {
+			return [];
+		}
+
+		async insert() {
+			return '10';
+		}
+
+		async update() {
+			return '10';
+		}
+
+		async multiInsert() {
+			return true;
+		}
+
+		async multiRemove() {
+			return true;
+		}
+	}
+
+	before(() => {
+		mockRequire(modelPath, Model);
+	});
+
+	after(() => {
+		mockRequire.stop(modelPath);
+	});
+
 	beforeEach(() => {
-		sandbox.stub(Model.prototype);
+		sinon.stub(Model.prototype);
 	});
 
 	afterEach(() => {
-		sandbox.restore();
+		sinon.restore();
 	});
 
 	class MyApiSaveWithStruct extends ApiSaveData {
@@ -125,9 +158,6 @@ describe('API Save', () => {
 
 		it('Should throw if data does not match struct', async () => {
 
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({});
-
 			const apiSave = new MyApiSaveWithStruct();
 			apiSave.endpoint = '/api/some-entity/10';
 			apiSave.data = {};
@@ -136,9 +166,6 @@ describe('API Save', () => {
 		});
 
 		it('Should throw if a relationship does not match struct', async () => {
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({});
 
 			const apiSave = new MyApiSaveWithStructAndRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -153,20 +180,14 @@ describe('API Save', () => {
 
 		it('Should throw if model is not found', async () => {
 
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.throws('Model does not exist');
-
 			const apiSave = new ApiSaveData();
-			apiSave.endpoint = '/api/some-entity/10';
+			apiSave.endpoint = '/api/some-other-entity/10';
 			apiSave.data = {};
 
 			await assert.rejects(() => apiSave.validate(), ApiSaveError);
 		});
 
 		it('Should pass validation if data matches struct', async () => {
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({});
 
 			const apiSave = new MyApiSaveWithStruct();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -180,9 +201,6 @@ describe('API Save', () => {
 		});
 
 		it('Should pass validation if data matches struct, including simple relationships', async () => {
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({});
 
 			const apiSave = new MyApiSaveWithStructAndRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -198,9 +216,6 @@ describe('API Save', () => {
 		});
 
 		it('Should pass validation if data matches struct, including complex relationships', async () => {
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({});
 
 			const apiSave = new MyApiSaveWithStructAndComplexRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -223,12 +238,7 @@ describe('API Save', () => {
 
 		it('Should save every field as main data, and none of them as relationships', async () => {
 
-			const fakeInsert = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
+			Model.prototype.insert.returns('10');
 
 			const apiSave = new ApiSaveData();
 			apiSave.endpoint = '/api/some-entity';
@@ -242,8 +252,8 @@ describe('API Save', () => {
 
 			await apiSave.process();
 
-			sandbox.assert.calledOnce(fakeInsert);
-			sandbox.assert.calledWithExactly(fakeInsert, {
+			sinon.assert.calledOnce(Model.prototype.insert);
+			sinon.assert.calledWithExactly(Model.prototype.insert, {
 				name: 'The name',
 				otherField: 'foo'
 			});
@@ -260,12 +270,7 @@ describe('API Save', () => {
 
 		it('Should throw if Save Main throws', async () => {
 
-			const fakeInsert = sandbox.fake.throws(new Error('Some internal error'));
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
+			Model.prototype.insert.throws(new Error('Some internal error'));
 
 			const apiSave = new MyApiSaveWithStruct();
 			apiSave.endpoint = '/api/some-entity';
@@ -279,41 +284,14 @@ describe('API Save', () => {
 
 			await assert.rejects(() => apiSave.process(), {
 				name: 'ApiSaveError',
-				code: ApiSaveError.codes.INTERNAL_ERROR
-			});
-		});
-
-		it('Should throw if Save Main throws with nested exception', async () => {
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: sandbox.stub().throws(new Error('Some error'))
-			});
-
-			const apiSave = new MyApiSaveWithStruct();
-			apiSave.endpoint = '/api/some-entity';
-			apiSave.data = {
-				name: 'The name',
-				otherField: 'foo'
-			};
-
-			const validation = await apiSave.validate();
-			assert.strictEqual(validation, undefined);
-
-			await assert.rejects(() => apiSave.process(), {
-				name: 'ApiSaveError',
-				code: ApiSaveError.codes.INTERNAL_ERROR
+				code: ApiSaveError.codes.INTERNAL_ERROR,
+				previousError: new Error('Some internal error')
 			});
 		});
 
 		it('Should throw if Save Main fails to save', async () => {
 
-			const fakeInsert = sandbox.fake.returns(false);
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
+			Model.prototype.insert.returns(false);
 
 			const apiSave = new MyApiSaveWithStruct();
 			apiSave.endpoint = '/api/some-entity';
@@ -333,12 +311,7 @@ describe('API Save', () => {
 
 		it('Should insert the record and set the ID in the response body', async () => {
 
-			const fakeInsert = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
+			Model.prototype.insert.returns('10');
 
 			const apiSave = new MyApiSaveWithStruct();
 			apiSave.endpoint = '/api/some-entity';
@@ -352,8 +325,8 @@ describe('API Save', () => {
 
 			await apiSave.process();
 
-			sandbox.assert.calledOnce(fakeInsert);
-			sandbox.assert.calledWithExactly(fakeInsert, {
+			sinon.assert.calledOnce(Model.prototype.insert);
+			sinon.assert.calledWithExactly(Model.prototype.insert, {
 				name: 'The name'
 			});
 
@@ -364,12 +337,7 @@ describe('API Save', () => {
 
 		it('Should insert the record and set the ID in the response body without saving relationships', async () => {
 
-			const fakeInsert = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
+			Model.prototype.insert.returns('10');
 
 			const apiSave = new MyApiSaveWithStructAndRelationships();
 			apiSave.endpoint = '/api/some-entity';
@@ -385,8 +353,8 @@ describe('API Save', () => {
 
 			await apiSave.process();
 
-			sandbox.assert.calledOnce(fakeInsert);
-			sandbox.assert.calledWithExactly(fakeInsert, {
+			sinon.assert.calledOnce(Model.prototype.insert);
+			sinon.assert.calledWithExactly(Model.prototype.insert, {
 				name: 'The name'
 			});
 
@@ -400,12 +368,7 @@ describe('API Save', () => {
 
 		it('Should throw if Save Main throws', async () => {
 
-			const fakeUpdate = sandbox.fake.throws(new Error('Some internal error'));
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
+			Model.prototype.update.throws(new Error('Some internal error'));
 
 			const apiSave = new MyApiSaveWithStruct();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -419,18 +382,14 @@ describe('API Save', () => {
 
 			await assert.rejects(() => apiSave.process(), {
 				name: 'ApiSaveError',
-				code: ApiSaveError.codes.INTERNAL_ERROR
+				code: ApiSaveError.codes.INTERNAL_ERROR,
+				previousError: new Error('Some internal error')
 			});
 		});
 
 		it('Should throw if Save Main fails to update', async () => {
 
-			const fakeUpdate = sandbox.fake.returns(false);
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
+			Model.prototype.update.returns(false);
 
 			const apiSave = new MyApiSaveWithStruct();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -450,12 +409,7 @@ describe('API Save', () => {
 
 		it('Should update the record and set the ID in the response body', async () => {
 
-			const fakeUpdate = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
+			Model.prototype.update.returns('10');
 
 			const apiSave = new MyApiSaveWithStruct();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -469,8 +423,8 @@ describe('API Save', () => {
 
 			await apiSave.process();
 
-			sandbox.assert.calledOnce(fakeUpdate);
-			sandbox.assert.calledWithExactly(fakeUpdate, {
+			sinon.assert.calledOnce(Model.prototype.update);
+			sinon.assert.calledWithExactly(Model.prototype.update, {
 				name: 'The name'
 			}, {
 				id: '10'
@@ -486,14 +440,8 @@ describe('API Save', () => {
 
 		it('Should throw if relationship save throws', async () => {
 
-			Model.prototype.multiInsert.throws('Some error');
-
-			const fakeInsert = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
+			Model.prototype.insert.returns('10');
+			Model.prototype.multiInsert.throws(new Error('Some internal error'));
 
 			const apiSave = new MyApiSaveWithStructAndRelationships();
 			apiSave.endpoint = '/api/some-entity';
@@ -513,14 +461,8 @@ describe('API Save', () => {
 
 		it('Should save relationships properly', async () => {
 
-			Model.prototype.multiInsert.returns();
-
-			const fakeInsert = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
+			Model.prototype.insert.returns('10');
+			Model.prototype.multiInsert.returns(true);
 
 			const apiSave = new MyApiSaveWithStructAndRelationships();
 			apiSave.endpoint = '/api/some-entity';
@@ -539,12 +481,12 @@ describe('API Save', () => {
 				id: '10'
 			});
 
-			sandbox.assert.calledTwice(Model.prototype.multiInsert);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
+			sinon.assert.calledTwice(Model.prototype.multiInsert);
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
 				{ theFirstId: '10', theSecondId: 'stuff-one' },
 				{ theFirstId: '10', theSecondId: 'stuff-two' }
 			]);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert.getCall(1), [
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(1), [
 				{ otherFirstId: '10', otherSecondId: 'other-stuff' }
 			]);
 		});
@@ -554,47 +496,10 @@ describe('API Save', () => {
 
 		it('Should throw if relationship save throws', async () => {
 
-			Model.prototype.multiInsert.throws();
-			Model.prototype.get.returns([]);
-
-			const fakeUpdate = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
-
-			const apiSave = new MyApiSaveWithStructAndRelationships();
-			apiSave.endpoint = '/api/some-entity/10';
-			apiSave.data = {
-				name: 'The name',
-				relatedStuff: ['stuff-one', 'stuff-two'],
-				otherRelatedStuff: ['other-stuff']
-			};
-
-			const validation = await apiSave.validate();
-			assert.strictEqual(validation, undefined);
-
-			await assert.rejects(() => apiSave.process(), {
-				name: 'ApiSaveError',
-				code: ApiSaveError.codes.INTERNAL_ERROR
-			});
-
-			sandbox.assert.calledOnce(fakeUpdate);
-		});
-
-		it('Should throw if relationship save throws with nested exception', async () => {
-
+			Model.prototype.update.returns('10');
 			Model.prototype.multiInsert.throws(new Error('Some error'));
 			Model.prototype.get.returns([]);
 
-			const fakeUpdate = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
-
 			const apiSave = new MyApiSaveWithStructAndRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
 			apiSave.data = {
@@ -608,24 +513,18 @@ describe('API Save', () => {
 
 			await assert.rejects(() => apiSave.process(), {
 				name: 'ApiSaveError',
-				code: ApiSaveError.codes.INTERNAL_ERROR
+				code: ApiSaveError.codes.INTERNAL_ERROR,
+				previousError: new Error('Some error')
 			});
 
-			sandbox.assert.calledOnce(fakeUpdate);
+			sinon.assert.calledOnce(Model.prototype.update);
 		});
 
 		it('Should save relationships properly, without removing when there are not existing relationships', async () => {
 
-			Model.prototype.multiInsert.returns();
-			Model.prototype.multiRemove.returns();
+			Model.prototype.update.returns('10');
+			Model.prototype.multiInsert.returns(true);
 			Model.prototype.get.returns([]);
-
-			const fakeUpdate = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
 
 			const apiSave = new MyApiSaveWithStructAndRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -644,33 +543,27 @@ describe('API Save', () => {
 				id: '10'
 			});
 
-			sandbox.assert.calledOnce(Model.prototype.get);
-			sandbox.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
+			sinon.assert.calledOnce(Model.prototype.get);
+			sinon.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
 
-			sandbox.assert.calledTwice(Model.prototype.multiInsert);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
+			sinon.assert.calledTwice(Model.prototype.multiInsert);
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
 				{ theFirstId: '10', theSecondId: 'stuff-one' },
 				{ theFirstId: '10', theSecondId: 'stuff-two' }
 			]);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert.getCall(1), [
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(1), [
 				{ otherFirstId: '10', otherSecondId: 'other-stuff' }
 			]);
 
-			sandbox.assert.notCalled(Model.prototype.multiRemove);
+			sinon.assert.notCalled(Model.prototype.multiRemove);
 		});
 
 		it('Should save relationships properly, removing the existing relationships that changed', async () => {
 
-			Model.prototype.multiInsert.returns();
-			Model.prototype.multiRemove.returns();
+			Model.prototype.update.returns('10');
+			Model.prototype.multiInsert.returns(true);
+			Model.prototype.multiRemove.returns(true);
 			Model.prototype.get.returns([{ otherFirstId: '10', otherSecondId: 'this-should-be-removed' }]);
-
-			const fakeUpdate = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
 
 			const apiSave = new MyApiSaveWithStructAndRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -689,36 +582,30 @@ describe('API Save', () => {
 				id: '10'
 			});
 
-			sandbox.assert.calledOnce(Model.prototype.get);
-			sandbox.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
+			sinon.assert.calledOnce(Model.prototype.get);
+			sinon.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
 
-			sandbox.assert.calledTwice(Model.prototype.multiInsert);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
+			sinon.assert.calledTwice(Model.prototype.multiInsert);
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
 				{ theFirstId: '10', theSecondId: 'stuff-one' },
 				{ theFirstId: '10', theSecondId: 'stuff-two' }
 			]);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert.getCall(1), [
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(1), [
 				{ otherFirstId: '10', otherSecondId: 'other-stuff' }
 			]);
 
-			sandbox.assert.calledOnce(Model.prototype.multiRemove);
-			sandbox.assert.calledWithExactly(Model.prototype.multiRemove, [
+			sinon.assert.calledOnce(Model.prototype.multiRemove);
+			sinon.assert.calledWithExactly(Model.prototype.multiRemove, [
 				{ otherFirstId: '10', otherSecondId: 'this-should-be-removed' }
 			]);
 		});
 
 		it('Should save the only relationship with elements, removing the existing relationships that changed', async () => {
 
-			Model.prototype.multiInsert.returns();
-			Model.prototype.multiRemove.returns();
+			Model.prototype.update.returns('10');
+			Model.prototype.multiInsert.returns(true);
+			Model.prototype.multiRemove.returns(true);
 			Model.prototype.get.returns([{ otherFirstId: '10', otherSecondId: 'this-should-be-removed' }]);
-
-			const fakeUpdate = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
 
 			const apiSave = new MyApiSaveWithStructAndRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -737,33 +624,27 @@ describe('API Save', () => {
 				id: '10'
 			});
 
-			sandbox.assert.calledOnce(Model.prototype.get);
-			sandbox.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
+			sinon.assert.calledOnce(Model.prototype.get);
+			sinon.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
 
-			sandbox.assert.calledOnce(Model.prototype.multiInsert);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert, [
+			sinon.assert.calledOnce(Model.prototype.multiInsert);
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert, [
 				{ theFirstId: '10', theSecondId: 'stuff-one' },
 				{ theFirstId: '10', theSecondId: 'stuff-two' }
 			]);
 
-			sandbox.assert.calledOnce(Model.prototype.multiRemove);
-			sandbox.assert.calledWithExactly(Model.prototype.multiRemove, [
+			sinon.assert.calledOnce(Model.prototype.multiRemove);
+			sinon.assert.calledWithExactly(Model.prototype.multiRemove, [
 				{ otherFirstId: '10', otherSecondId: 'this-should-be-removed' }
 			]);
 		});
 
 		it('Should not insert or remove if the relationships did not change', async () => {
 
-			Model.prototype.multiInsert.returns();
-			Model.prototype.multiRemove.returns();
+			Model.prototype.update.returns('10');
+			Model.prototype.multiInsert.returns(true);
+			Model.prototype.multiRemove.returns(true);
 			Model.prototype.get.returns([{ otherFirstId: '10', otherSecondId: 'other-stuff' }]);
-
-			const fakeUpdate = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
 
 			const apiSave = new MyApiSaveWithStructAndRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -782,16 +663,16 @@ describe('API Save', () => {
 				id: '10'
 			});
 
-			sandbox.assert.calledOnce(Model.prototype.get);
-			sandbox.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
+			sinon.assert.calledOnce(Model.prototype.get);
+			sinon.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
 
-			sandbox.assert.calledOnce(Model.prototype.multiInsert);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert, [
+			sinon.assert.calledOnce(Model.prototype.multiInsert);
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert, [
 				{ theFirstId: '10', theSecondId: 'stuff-one' },
 				{ theFirstId: '10', theSecondId: 'stuff-two' }
 			]);
 
-			sandbox.assert.notCalled(Model.prototype.multiRemove);
+			sinon.assert.notCalled(Model.prototype.multiRemove);
 		});
 	});
 
@@ -799,15 +680,9 @@ describe('API Save', () => {
 
 		it('Should throw if relationship save throws', async () => {
 
-			Model.prototype.multiInsert.throws();
+			Model.prototype.insert.returns('10');
+			Model.prototype.multiInsert.throws(new Error('Some error'));
 			Model.prototype.get.returns([{ otherFirstId: '10', otherSecondId: 'other-stuff' }]);
-
-			const fakeInsert = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
 
 			const apiSave = new MyApiSaveWithStructAndComplexRelationships();
 			apiSave.endpoint = '/api/some-entity';
@@ -825,22 +700,17 @@ describe('API Save', () => {
 
 			await assert.rejects(() => apiSave.process(), {
 				name: 'ApiSaveError',
-				code: ApiSaveError.codes.INTERNAL_ERROR
+				code: ApiSaveError.codes.INTERNAL_ERROR,
+				previousError: new Error('Some error')
 			});
 		});
 
 		it('Should save relationships properly', async () => {
 
-			Model.prototype.multiInsert.returns();
-			Model.prototype.multiRemove.returns();
+			Model.prototype.insert.returns('10');
+			Model.prototype.multiInsert.returns(true);
+			Model.prototype.multiRemove.returns(true);
 			Model.prototype.get.returns([{ otherFirstId: '10', otherSecondId: 'other-stuff' }]);
-
-			const fakeInsert = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
 
 			const apiSave = new MyApiSaveWithStructAndComplexRelationships();
 			apiSave.endpoint = '/api/some-entity';
@@ -862,12 +732,12 @@ describe('API Save', () => {
 				id: '10'
 			});
 
-			sandbox.assert.calledTwice(Model.prototype.multiInsert);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
+			sinon.assert.calledTwice(Model.prototype.multiInsert);
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
 				{ theFirstId: '10', theSecondId: 'stuff-one' },
 				{ theFirstId: '10', theSecondId: 'stuff-two' }
 			]);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert.getCall(1), [
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(1), [
 				{ otherFirstId: '10', otherSecondId: 90, title: 'First title' },
 				{ otherFirstId: '10', otherSecondId: 91, title: 'Second title', comment: 'Optional comment' }
 			]);
@@ -878,18 +748,12 @@ describe('API Save', () => {
 
 		it('Should throw if relationship save throws', async () => {
 
-			Model.prototype.multiInsert.throws();
+			Model.prototype.update.returns('10');
+			Model.prototype.multiInsert.throws(new Error('Some error'));
 			Model.prototype.get.returns([]);
 
-			const fakeInsert = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
-
 			const apiSave = new MyApiSaveWithStructAndComplexRelationships();
-			apiSave.endpoint = '/api/some-entity';
+			apiSave.endpoint = '/api/some-entity/10';
 			apiSave.data = {
 				name: 'The name',
 				relatedStuff: ['stuff-one', 'stuff-two'],
@@ -904,22 +768,17 @@ describe('API Save', () => {
 
 			await assert.rejects(() => apiSave.process(), {
 				name: 'ApiSaveError',
-				code: ApiSaveError.codes.INTERNAL_ERROR
+				code: ApiSaveError.codes.INTERNAL_ERROR,
+				previousError: new Error('Some error')
 			});
 		});
 
 		it('Should save relationships properly, without removing when there are not existing relationships', async () => {
 
-			Model.prototype.multiInsert.returns();
-			Model.prototype.multiRemove.returns();
+			Model.prototype.update.returns('10');
+			Model.prototype.multiInsert.returns(true);
+			Model.prototype.multiRemove.returns(true);
 			Model.prototype.get.returns([]);
-
-			const fakeUpdate = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
 
 			const apiSave = new MyApiSaveWithStructAndComplexRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -941,38 +800,32 @@ describe('API Save', () => {
 				id: '10'
 			});
 
-			sandbox.assert.calledOnce(Model.prototype.get);
-			sandbox.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
+			sinon.assert.calledOnce(Model.prototype.get);
+			sinon.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
 
-			sandbox.assert.calledTwice(Model.prototype.multiInsert);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
+			sinon.assert.calledTwice(Model.prototype.multiInsert);
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
 				{ theFirstId: '10', theSecondId: 'stuff-one' },
 				{ theFirstId: '10', theSecondId: 'stuff-two' }
 			]);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert.getCall(1), [
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(1), [
 				{ otherFirstId: '10', otherSecondId: 90, title: 'First title' },
 				{ otherFirstId: '10', otherSecondId: 91, title: 'Second title', comment: 'Optional comment' }
 			]);
 
-			sandbox.assert.notCalled(Model.prototype.multiRemove);
+			sinon.assert.notCalled(Model.prototype.multiRemove);
 		});
 
 		it('Should save relationships properly, removing the existing relationships that changed', async () => {
 
-			Model.prototype.multiInsert.returns();
-			Model.prototype.multiRemove.returns();
+			Model.prototype.update.returns('10');
+			Model.prototype.multiInsert.returns(true);
+			Model.prototype.multiRemove.returns(true);
 			Model.prototype.get.returns([
 				{ otherFirstId: '10', otherSecondId: 88, title: 'this-should-be-removed' },
 				{ otherFirstId: '10', otherSecondId: 91, title: 'this-should-be-removed-too', comment: 'Because of this the changes' }
 			]);
 
-			const fakeUpdate = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
-
 			const apiSave = new MyApiSaveWithStructAndComplexRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
 			apiSave.data = {
@@ -993,21 +846,21 @@ describe('API Save', () => {
 				id: '10'
 			});
 
-			sandbox.assert.calledOnce(Model.prototype.get);
-			sandbox.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
+			sinon.assert.calledOnce(Model.prototype.get);
+			sinon.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
 
-			sandbox.assert.calledTwice(Model.prototype.multiInsert);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
+			sinon.assert.calledTwice(Model.prototype.multiInsert);
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
 				{ theFirstId: '10', theSecondId: 'stuff-one' },
 				{ theFirstId: '10', theSecondId: 'stuff-two' }
 			]);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert.getCall(1), [
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(1), [
 				{ otherFirstId: '10', otherSecondId: 90, title: 'First title' },
 				{ otherFirstId: '10', otherSecondId: 91, title: 'Second title', comment: 'Optional comment' }
 			]);
 
-			sandbox.assert.calledOnce(Model.prototype.multiRemove);
-			sandbox.assert.calledWithExactly(Model.prototype.multiRemove, [
+			sinon.assert.calledOnce(Model.prototype.multiRemove);
+			sinon.assert.calledWithExactly(Model.prototype.multiRemove, [
 				{ otherFirstId: '10', otherSecondId: 88 },
 				{ otherFirstId: '10', otherSecondId: 91 }
 			]);
@@ -1015,19 +868,13 @@ describe('API Save', () => {
 
 		it('Should save the only relationship with elements, removing the existing relationships that changed', async () => {
 
-			Model.prototype.multiInsert.returns();
-			Model.prototype.multiRemove.returns();
+			Model.prototype.update.returns('10');
+			Model.prototype.multiInsert.returns(true);
+			Model.prototype.multiRemove.returns(true);
 			Model.prototype.get.returns([
 				{ otherFirstId: '10', otherSecondId: 88, title: 'this-should-be-removed' },
 				{ otherFirstId: '10', otherSecondId: 91, title: 'this-should-be-removed-too', comment: 'Because of this the changes' }
 			]);
-
-			const fakeUpdate = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
 
 			const apiSave = new MyApiSaveWithStructAndComplexRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -1046,17 +893,17 @@ describe('API Save', () => {
 				id: '10'
 			});
 
-			sandbox.assert.calledOnce(Model.prototype.get);
-			sandbox.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
+			sinon.assert.calledOnce(Model.prototype.get);
+			sinon.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
 
-			sandbox.assert.calledOnce(Model.prototype.multiInsert);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert, [
+			sinon.assert.calledOnce(Model.prototype.multiInsert);
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert, [
 				{ theFirstId: '10', theSecondId: 'stuff-one' },
 				{ theFirstId: '10', theSecondId: 'stuff-two' }
 			]);
 
-			sandbox.assert.calledOnce(Model.prototype.multiRemove);
-			sandbox.assert.calledWithExactly(Model.prototype.multiRemove, [
+			sinon.assert.calledOnce(Model.prototype.multiRemove);
+			sinon.assert.calledWithExactly(Model.prototype.multiRemove, [
 				{ otherFirstId: '10', otherSecondId: 88 },
 				{ otherFirstId: '10', otherSecondId: 91 }
 			]);
@@ -1064,19 +911,13 @@ describe('API Save', () => {
 
 		it('Should not insert or remove if the relationships did not change', async () => {
 
-			Model.prototype.multiInsert.returns();
-			Model.prototype.multiRemove.returns();
+			Model.prototype.update.returns('10');
+			Model.prototype.multiInsert.returns(true);
+			Model.prototype.multiRemove.returns(true);
 			Model.prototype.get.returns([
 				{ otherFirstId: '10', otherSecondId: 90, title: 'First title' },
 				{ otherFirstId: '10', otherSecondId: 91, title: 'Second title', comment: 'Optional comment' }
 			]);
-
-			const fakeUpdate = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
 
 			const apiSave = new MyApiSaveWithStructAndComplexRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -1098,16 +939,16 @@ describe('API Save', () => {
 				id: '10'
 			});
 
-			sandbox.assert.calledOnce(Model.prototype.get);
-			sandbox.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
+			sinon.assert.calledOnce(Model.prototype.get);
+			sinon.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
 
-			sandbox.assert.calledOnce(Model.prototype.multiInsert);
-			sandbox.assert.calledWithExactly(Model.prototype.multiInsert, [
+			sinon.assert.calledOnce(Model.prototype.multiInsert);
+			sinon.assert.calledWithExactly(Model.prototype.multiInsert, [
 				{ theFirstId: '10', theSecondId: 'stuff-one' },
 				{ theFirstId: '10', theSecondId: 'stuff-two' }
 			]);
 
-			sandbox.assert.notCalled(Model.prototype.multiRemove);
+			sinon.assert.notCalled(Model.prototype.multiRemove);
 		});
 	});
 
@@ -1134,15 +975,9 @@ describe('API Save', () => {
 				}
 			}
 
-			Model.prototype.multiInsert.throws();
+			Model.prototype.insert.returns('10');
+			Model.prototype.multiInsert.throws(new Error('Some error'));
 			Model.prototype.get.returns([]);
-
-			const fakeInsert = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
 
 			const apiSave = new MyApiSaveWithMisconfiguredRelationships();
 			apiSave.endpoint = '/api/some-entity';
@@ -1190,12 +1025,7 @@ describe('API Save', () => {
 			}
 
 
-			const fakeInsert = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
+			Model.prototype.insert.returns('10');
 
 			const apiSave = new MyApiSaveWithStructAndFormat();
 			apiSave.endpoint = '/api/some-entity';
@@ -1209,8 +1039,8 @@ describe('API Save', () => {
 
 			await apiSave.process();
 
-			sandbox.assert.calledOnce(fakeInsert);
-			sandbox.assert.calledWithExactly(fakeInsert, {
+			sinon.assert.calledOnce(Model.prototype.insert);
+			sinon.assert.calledWithExactly(Model.prototype.insert, {
 				name: 'The name',
 				newField: 'foo'
 			});
@@ -1221,20 +1051,15 @@ describe('API Save', () => {
 		});
 	});
 
-	describe('Process with client specific model', () => {
+	describe('Process with API Session', () => {
 
-		it('Should instance the models through the client getInstance method when creating a record', async () => {
+		it('Should instance the models through the session getSessionInstance method when creating a record', async () => {
 
-			const clientMock = {
-				getInstance: sandbox.fake.returns(new Model())
+			Model.prototype.insert.returns('10');
+
+			const sessionMock = {
+				getSessionInstance: sinon.fake.returns(new Model())
 			};
-
-			const fakeInsert = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				insert: fakeInsert
-			});
 
 			const apiSave = new MyApiSaveWithStructAndRelationships();
 			apiSave.endpoint = '/api/some-entity';
@@ -1244,33 +1069,28 @@ describe('API Save', () => {
 				relatedStuff: ['stuff-one', 'stuff-two'],
 				otherRelatedStuff: ['other-stuff-one', 'other-stuff-two']
 			};
-			apiSave.client = clientMock;
+			apiSave.session = sessionMock;
 
 			const validation = await apiSave.validate();
 			assert.strictEqual(validation, undefined);
 
 			await apiSave.process();
 
-			sandbox.assert.calledTwice(clientMock.getInstance);
-			sandbox.assert.calledWithExactly(clientMock.getInstance, Model);
+			// 1: Para obtener el model principal. 2 y 3: Para los modelos de las relaciones
+			sinon.assert.calledThrice(sessionMock.getSessionInstance);
+			sinon.assert.calledWithExactly(sessionMock.getSessionInstance, Model);
 		});
 
-		it('Should instance the models through the client getInstance method when updating a record', async () => {
+		it('Should instance the models through the session getSessionInstance method when updating a record', async () => {
 
-			Model.prototype.multiInsert.returns();
-			Model.prototype.multiRemove.returns();
+			Model.prototype.update.returns('10');
+			Model.prototype.multiInsert.returns(true);
+			Model.prototype.multiRemove.returns(true);
 			Model.prototype.get.returns([]);
 
-			const clientMock = {
-				getInstance: sandbox.fake.returns(new Model())
+			const sessionMock = {
+				getSessionInstance: sinon.fake.returns(new Model())
 			};
-
-			const fakeUpdate = sandbox.fake.returns('10');
-
-			const getModelInstanceStub = sandbox.stub(ApiSaveValidator.prototype, '_getModelInstance');
-			getModelInstanceStub.returns({
-				update: fakeUpdate
-			});
 
 			const apiSave = new MyApiSaveWithStructAndRelationships();
 			apiSave.endpoint = '/api/some-entity/10';
@@ -1280,15 +1100,16 @@ describe('API Save', () => {
 				relatedStuff: ['stuff-one', 'stuff-two'],
 				otherRelatedStuff: ['other-stuff-one', 'other-stuff-two']
 			};
-			apiSave.client = clientMock;
+			apiSave.session = sessionMock;
 
 			const validation = await apiSave.validate();
 			assert.strictEqual(validation, undefined);
 
 			await apiSave.process();
 
-			sandbox.assert.calledTwice(clientMock.getInstance);
-			sandbox.assert.calledWithExactly(clientMock.getInstance, Model);
+			// 1: Para obtener el model principal. 2 y 3: Para los modelos de las relaciones
+			sinon.assert.calledThrice(sessionMock.getSessionInstance);
+			sinon.assert.calledWithExactly(sessionMock.getSessionInstance, Model);
 		});
 	});
 
