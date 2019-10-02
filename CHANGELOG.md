@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [4.0.0] - 2019-10-02
+### Changed
+- API upgraded to v4 (`api-session` injected) (**BREAKING CHANGE**)
+- Model v3 compatibility (`api-session` injection) (**BREAKING CHANGE**)
+
 ## [3.0.2] - 2019-09-30
 ### Fixed
 - README fixed for relationship models property `modelClass`

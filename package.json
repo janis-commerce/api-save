@@ -1,6 +1,6 @@
 {
   "name": "@janiscommerce/api-save",
-  "version": "3.0.2",
+  "version": "4.0.0",
   "description": "A package to handle JANIS Views Save APIs",
   "main": "lib/index.js",
   "scripts": {
