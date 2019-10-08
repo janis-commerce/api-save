@@ -1049,6 +1049,57 @@ describe('API Save', () => {
 				id: '10'
 			});
 		});
+
+		it('Should format the data properly before saving with an async format method', async () => {
+
+			class MyApiSaveWithStructAndFormat extends ApiSaveData {
+				static get idStruct() {
+					return 'string?';
+				}
+
+				static get mainStruct() {
+					return struct.partial({
+						name: 'string'
+					});
+				}
+
+				static get relationshipsStruct() {
+					return struct.partial({});
+				}
+
+				async format(record) {
+					return {
+						...record,
+						newField: 'foo'
+					};
+				}
+			}
+
+
+			Model.prototype.insert.returns('10');
+
+			const apiSave = new MyApiSaveWithStructAndFormat();
+			apiSave.endpoint = '/api/some-entity';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = await apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await apiSave.process();
+
+			sinon.assert.calledOnce(Model.prototype.insert);
+			sinon.assert.calledWithExactly(Model.prototype.insert, {
+				name: 'The name',
+				newField: 'foo'
+			});
+
+			assert.deepStrictEqual(apiSave.response.body, {
+				id: '10'
+			});
+		});
 	});
 
 	describe('Process with API Session', () => {
