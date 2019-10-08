@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [4.1.0] - 2019-10-08
+### Added
+- Now `format` method can be asynchronous
+
 ## [4.0.0] - 2019-10-02
 ### Changed
 - API upgraded to v4 (`api-session` injected) (**BREAKING CHANGE**)
