@@ -1102,6 +1102,49 @@ describe('API Save', () => {
 		});
 	});
 
+	describe('Process with postSaveHook method', () => {
+
+		it('Should execute the postSaveHook after saving', async () => {
+
+			class MyApiSaveWithStructAndHook extends ApiSaveData {
+
+				static get mainStruct() {
+					return struct.partial({
+						name: 'string'
+					});
+				}
+
+				async postSaveHook(id, record) {
+					return {
+						id,
+						record
+					};
+				}
+			}
+
+			sinon.spy(MyApiSaveWithStructAndHook.prototype, 'postSaveHook');
+
+			Model.prototype.insert.returns('10');
+
+			const apiSave = new MyApiSaveWithStructAndHook();
+			apiSave.endpoint = '/api/some-entity';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = await apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await apiSave.process();
+
+			sinon.assert.calledOnce(MyApiSaveWithStructAndHook.prototype.postSaveHook);
+			sinon.assert.calledWithExactly(MyApiSaveWithStructAndHook.prototype.postSaveHook, '10', {
+				name: 'The name'
+			});
+		});
+	});
+
 	describe('Process with API Session', () => {
 
 		it('Should instance the models through the session getSessionInstance method when creating a record', async () => {

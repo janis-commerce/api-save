@@ -18,6 +18,7 @@ const { ApiSaveData } = require('@janiscommerce/api-save');
 const { struct } = require('superstruct');
 
 const MyRelatedModel = require('../../models/my-related-model');
+const someAsyncTask = require('./async-task');
 
 class MyApiSaveData extends ApiSaveData {
 
@@ -57,6 +58,10 @@ class MyApiSaveData extends ApiSaveData {
 		};
 	}
 
+	postSaveHook(id, savedData) {
+		return someAsyncTask(id, savedData);
+	}
+
 }
 
 module.exports = MyApiSaveData;
@@ -92,3 +97,8 @@ Defaults to an object partial with no properties.
 
 ### format(record)
 You can use this to format your main record before it's saved. For example, mapping user friendly values to DB friendly values, add default values, etc.
+If it returns a Promise, it will be awaited.
+
+### postSaveHook(id, record)
+You can use this to perform a task after saving your main record. For example, emitting an event, logging something, etc.
+If it returns a Promise, it will be awaited.
