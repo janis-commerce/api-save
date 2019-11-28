@@ -51,6 +51,10 @@ class MyApiSaveData extends ApiSaveData {
 		});
 	}
 
+	postStructValidate() {
+		return someAsyncTask(this.dataToSave.main);
+	}
+
 	format({ someField, ...restoOfTheRecord }) {
 		return {
 			...restoOfTheRecord,
@@ -94,6 +98,10 @@ Defaults to an object with any property.
 ### static get relationshipsStruct()
 This is used to validate the data received in the request, checking the data to be passed to the relationships.
 Defaults to an object partial with no properties.
+
+### postStructValidate()
+This is used to validate the data received in the request, making additional validation even injecting data to the received data.
+If it returns a Promise, it will be awaited.
 
 ### format(record)
 You can use this to format your main record before it's saved. For example, mapping user friendly values to DB friendly values, add default values, etc.
