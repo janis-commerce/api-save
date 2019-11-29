@@ -1221,7 +1221,7 @@ describe('API Save', () => {
 				}
 			}
 
-			Model.prototype.insert.returns('15');
+			Model.prototype.insert.resolves('15');
 
 			sinon.spy(MyApiSaveWithPostStructValidate.prototype, 'postStructValidate');
 
@@ -1249,7 +1249,7 @@ describe('API Save', () => {
 			});
 		});
 
-		it('Should execute the postStructValidate and throws a exception', async () => {
+		it('Should fail if postStructValidate throws a exception', async () => {
 
 			class MyApiSaveWithPostStructValidate extends ApiSaveData {
 
