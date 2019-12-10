@@ -1207,4 +1207,75 @@ describe('API Save', () => {
 		});
 	});
 
+	describe('Process with postStructValidate method', () => {
+
+		it('Should execute the postStructValidate after validate data', async () => {
+
+			class MyApiSaveWithPostStructValidate extends ApiSaveData {
+
+				async postStructValidate() {
+
+					const newField = 123;
+
+					this.dataToSave.main.newField = newField;
+				}
+			}
+
+			Model.prototype.insert.resolves('15');
+
+			sinon.spy(MyApiSaveWithPostStructValidate.prototype, 'postStructValidate');
+
+			const apiSave = new MyApiSaveWithPostStructValidate();
+
+			apiSave.endpoint = '/api/some-entity';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = await apiSave.validate();
+
+			assert.strictEqual(validation, undefined);
+
+			await apiSave.process();
+
+			sinon.assert.calledOnce(MyApiSaveWithPostStructValidate.prototype.postStructValidate);
+			sinon.assert.calledOnce(Model.prototype.insert);
+
+			sinon.assert.calledWithExactly(Model.prototype.insert, {
+				name: 'The name',
+				otherField: 'foo',
+				newField: 123
+			});
+		});
+
+		it('Should fail if postStructValidate throws a exception', async () => {
+
+			class MyApiSaveWithPostStructValidate extends ApiSaveData {
+
+				async postStructValidate() {
+					throw new Error('throws a nice exception');
+				}
+			}
+
+			sinon.spy(MyApiSaveWithPostStructValidate.prototype, 'postStructValidate');
+
+			const apiSave = new MyApiSaveWithPostStructValidate();
+
+			apiSave.endpoint = '/api/some-entity';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			await assert.rejects(() => apiSave.validate(), {
+				name: 'ApiSaveError',
+				code: ApiSaveError.codes.INVALID_REQUEST_DATA,
+				previousError: new Error('throws a nice exception')
+			});
+
+			sinon.assert.calledOnce(MyApiSaveWithPostStructValidate.prototype.postStructValidate);
+		});
+	});
+
 });
