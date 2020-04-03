@@ -20,7 +20,7 @@
   "devDependencies": {
     "eslint": "^5.16.0",
     "eslint-config-airbnb-base": "^13.2.0",
-    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-import": "^2.20.2",
     "husky": "^2.7.0",
     "mocha": "^5.2.0",
     "mock-require": "^3.0.3",
@@ -34,8 +34,8 @@
     "test": "tests"
   },
   "dependencies": {
-    "@janiscommerce/api": "^4.2.2",
+    "@janiscommerce/api": "^4.2.3",
     "lodash.isequal": "^4.5.0",
-    "superstruct": "^0.6.1"
+    "superstruct": "0.6.2"
   }
 }
