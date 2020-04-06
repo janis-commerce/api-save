@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Mongo Duplicated Key Error handler
+- MongoDB Duplicated Key Error handler
 
 ## [4.3.2] - 2020-02-18
 ### Changed
