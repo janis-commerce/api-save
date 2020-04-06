@@ -309,6 +309,29 @@ describe('API Save', () => {
 			});
 		});
 
+		it('Should throw and format the duplicated key errors', async () => {
+
+			Model.prototype.insert.rejects(
+				new Error('E11000 duplicate key error collection: db.collection index: field dup key: { field: "data" }')
+			);
+
+			const apiSave = new MyApiSaveWithStruct();
+			apiSave.endpoint = '/api/some-entity';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = await apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await assert.rejects(() => apiSave.process(), {
+				name: 'ApiSaveError',
+				code: ApiSaveError.codes.DUPLICATED_KEY_ERROR,
+				message: 'A document for field: \'field\' already exists'
+			});
+		});
+
 		it('Should insert the record and set the ID in the response body', async () => {
 
 			Model.prototype.insert.returns('10');
