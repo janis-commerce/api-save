@@ -312,7 +312,7 @@ describe('API Save', () => {
 		it('Should throw and format the duplicated key errors', async () => {
 
 			Model.prototype.insert.rejects(
-				new Error('E11000 duplicate key error collection: db.collection index: field dup key: { field: "data" }')
+				new Error('E11000 duplicate key error collection: db.collection index: some_index dup key: { field: "data" }')
 			);
 
 			const apiSave = new MyApiSaveWithStruct();
@@ -328,7 +328,30 @@ describe('API Save', () => {
 			await assert.rejects(() => apiSave.process(), {
 				name: 'ApiSaveError',
 				code: ApiSaveError.codes.DUPLICATED_KEY_ERROR,
-				message: 'A document for field: \'field\' already exists'
+				message: 'A document for field or fields: \'field\' already exists'
+			});
+		});
+
+		it('Should throw and format the duplicated key errors with multiple index', async () => {
+
+			Model.prototype.insert.rejects(
+				new Error('E11000 duplicate key error collection: db.collection index: some_index dup key: { some: "data", other: "data" }')
+			);
+
+			const apiSave = new MyApiSaveWithStruct();
+			apiSave.endpoint = '/api/some-entity';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = await apiSave.validate();
+			assert.strictEqual(validation, undefined);
+
+			await assert.rejects(() => apiSave.process(), {
+				name: 'ApiSaveError',
+				code: ApiSaveError.codes.DUPLICATED_KEY_ERROR,
+				message: 'A document for field or fields: \'some, other\' already exists'
 			});
 		});
 
