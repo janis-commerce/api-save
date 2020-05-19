@@ -1,6 +1,6 @@
 {
   "name": "@janiscommerce/api-save",
-  "version": "4.4.2",
+  "version": "4.5.0",
   "description": "A package to handle JANIS Save APIs",
   "main": "lib/index.js",
   "scripts": {
@@ -33,9 +33,12 @@
   "directories": {
     "test": "tests"
   },
+  "peerDependencies": {
+    "@janiscommerce/model": "^4.1.0"
+  },
   "dependencies": {
-    "@janiscommerce/api": "^4.2.5",
-    "lodash.isequal": "^4.5.0",
+    "@janiscommerce/api": "^4.3.0",
+    "lodash.isequal": "4.5.0",
     "superstruct": "0.6.2"
   }
 }
