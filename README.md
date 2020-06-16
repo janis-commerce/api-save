@@ -3,12 +3,20 @@
 [![Build Status](https://travis-ci.org/janis-commerce/api-save.svg?branch=master)](https://travis-ci.org/janis-commerce/api-save)
 [![Coverage Status](https://coveralls.io/repos/github/janis-commerce/api-save/badge.svg?branch=master)](https://coveralls.io/github/janis-commerce/api-save?branch=master)
 
-A package to handle JANIS Views Save APIs
+A package to handle Janis Save APIs
 
 ## Installation
 ```sh
 npm install @janiscommerce/api-save
 ```
+
+## ⚠️ **Breaking changes from version *5.0.0*** ⚠️
+*Since 5.0.0*
+
+API upgraded to v5. API Session store validations replaced with loactions
+
+For more information see [API](https://www.npmjs.com/package/@janiscommerce/api) and [API Session](https://www.npmjs.com/package/@janiscommerce/api-session)
+
 
 ## Usage
 ```js
