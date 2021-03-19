@@ -20,6 +20,10 @@ describe('API Save', () => {
 			return [];
 		}
 
+		async getById() {
+			return {};
+		}
+
 		async insert() {
 			return '10';
 		}
@@ -252,8 +256,7 @@ describe('API Save', () => {
 
 			await apiSave.process();
 
-			sinon.assert.calledOnce(Model.prototype.insert);
-			sinon.assert.calledWithExactly(Model.prototype.insert, {
+			sinon.assert.calledOnceWithExactly(Model.prototype.insert, {
 				name: 'The name',
 				otherField: 'foo'
 			});
@@ -371,8 +374,7 @@ describe('API Save', () => {
 
 			await apiSave.process();
 
-			sinon.assert.calledOnce(Model.prototype.insert);
-			sinon.assert.calledWithExactly(Model.prototype.insert, {
+			sinon.assert.calledOnceWithExactly(Model.prototype.insert, {
 				name: 'The name'
 			});
 
@@ -399,8 +401,7 @@ describe('API Save', () => {
 
 			await apiSave.process();
 
-			sinon.assert.calledOnce(Model.prototype.insert);
-			sinon.assert.calledWithExactly(Model.prototype.insert, {
+			sinon.assert.calledOnceWithExactly(Model.prototype.insert, {
 				name: 'The name'
 			});
 
@@ -469,8 +470,7 @@ describe('API Save', () => {
 
 			await apiSave.process();
 
-			sinon.assert.calledOnce(Model.prototype.update);
-			sinon.assert.calledWithExactly(Model.prototype.update, {
+			sinon.assert.calledOnceWithExactly(Model.prototype.update, {
 				name: 'The name'
 			}, {
 				id: '10'
@@ -589,8 +589,7 @@ describe('API Save', () => {
 				id: '10'
 			});
 
-			sinon.assert.calledOnce(Model.prototype.get);
-			sinon.assert.calledWithExactly(Model.prototype.get, { otherFirstId: '10' });
+			sinon.assert.calledOnceWithExactly(Model.prototype.get, { otherFirstId: '10' });
 
 			sinon.assert.calledTwice(Model.prototype.multiInsert);
 			sinon.assert.calledWithExactly(Model.prototype.multiInsert.getCall(0), [
@@ -1324,4 +1323,112 @@ describe('API Save', () => {
 		});
 	});
 
+	describe('Process with shouldSave method and using getCurrent', () => {
+
+		class MyApiSaveWithShouldSave extends ApiSaveData {
+
+			format(data) {
+				return {
+					...data,
+					extraField: 123
+				};
+			}
+
+			async shouldSave(formattedItem) {
+				const currentItem = await this.getCurrent();
+				return currentItem.extraField !== formattedItem.extraField;
+			}
+		}
+
+		it('should save when current has other data', async () => {
+
+			const apiSave = new MyApiSaveWithShouldSave();
+
+			Model.prototype.getById.returns({
+				name: 'The name',
+				otherField: 'foo',
+				extraField: 321
+			});
+
+			Model.prototype.update.resolves(1);
+
+			apiSave.endpoint = '/api/some-entity/9';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = await apiSave.validate();
+
+			assert.strictEqual(validation, undefined);
+
+			await apiSave.process();
+
+			sinon.assert.calledOnceWithExactly(Model.prototype.update, {
+				name: 'The name',
+				otherField: 'foo',
+				extraField: 123
+			}, {
+				id: '9'
+			});
+
+			assert.deepStrictEqual(apiSave.response.body, {
+				id: '9'
+			});
+
+		});
+
+		it('shouldn\'t save when current has the same data', async () => {
+
+			const apiSave = new MyApiSaveWithShouldSave();
+
+			Model.prototype.getById.returns({
+				name: 'The name',
+				otherField: 'foo',
+				extraField: 123
+			});
+
+			apiSave.endpoint = '/api/some-entity/9';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = await apiSave.validate();
+
+			assert.strictEqual(validation, undefined);
+
+			await apiSave.process();
+
+			sinon.assert.notCalled(Model.prototype.update);
+
+			assert.deepStrictEqual(apiSave.response.body, {
+				id: '9'
+			});
+		});
+
+		it('should reject when using getCurrent method on a APIPost', async () => {
+
+			const apiSave = new MyApiSaveWithShouldSave();
+
+			apiSave.endpoint = '/api/some-entity';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = await apiSave.validate();
+
+			assert.strictEqual(validation, undefined);
+
+			await assert.rejects(() => apiSave.getCurrent(), {
+				name: 'ApiSaveError',
+				code: ApiSaveError.codes.INTERNAL_ERROR
+			});
+
+			sinon.assert.notCalled(Model.prototype.getById);
+			sinon.assert.notCalled(Model.prototype.insert);
+			sinon.assert.notCalled(Model.prototype.update);
+		});
+	});
 });

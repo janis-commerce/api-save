@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [6.1.0] - 2021-03-19
+### Added
+- Method `getCurrent` for getting current item easily
+- Method `shouldSave` called after format to avoid useless writes in model
+
 ## [6.0.0] - 2020-08-27
 ### Added
 - GitHub Actions for build, coverage and publish

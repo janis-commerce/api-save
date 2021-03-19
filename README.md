@@ -21,7 +21,7 @@ const { struct } = require('superstruct');
 const MyRelatedModel = require('../../models/my-related-model');
 const someAsyncTask = require('./async-task');
 
-class MyApiSaveData extends ApiSaveData {
+module.exports = class MyApiSaveData extends ApiSaveData {
 
 	static get relationshipsParameters() {
 		return {
@@ -56,20 +56,23 @@ class MyApiSaveData extends ApiSaveData {
 		return someAsyncTask(this.dataToSave.main);
 	}
 
-	format({ someField, ...restoOfTheRecord }) {
+	format({ someField, ...restOfTheRecord }) {
 		return {
-			...restoOfTheRecord,
+			...restOfTheRecord,
 			someField: `prefix-${someField}`
 		};
+	}
+
+	async shouldSave(formattedItem) {
+		const currentItem = await this.getCurrent();
+		return formattedItem.someField !== currentItem.someField;
 	}
 
 	postSaveHook(id, savedData) {
 		return someAsyncTask(id, savedData);
 	}
-
-}
-
-module.exports = MyApiSaveData;
+	
+};
 ```
 
 ## API
@@ -86,7 +89,7 @@ The parameters contain the following properties:
 - modelClass: The class of the model that should save this relationship
 - mainIdentifierField: The field name where the main ID should be saved
 - secondaryIdentifierField: The field name where the related ID should be saved
-- shouldClean: Indicates if previuos relationships should be removed. Optional, defaults to `false`
+- shouldClean: Indicates if previous relationships should be removed. Optional, defaults to `false`
 
 ### static get idStruct()
 This is used to validate the ID received as path parameter.
@@ -100,7 +103,7 @@ Defaults to an object with any property.
 This is used to validate the data received in the request, checking the data to be passed to the relationships.
 Defaults to an object partial with no properties.
 
-### postStructValidate()
+### async postStructValidate()
 This is used to validate the data received in the request, making additional validation even injecting data to the received data.
 If it returns a Promise, it will be awaited.
 
@@ -108,6 +111,15 @@ If it returns a Promise, it will be awaited.
 You can use this to format your main record before it's saved. For example, mapping user friendly values to DB friendly values, add default values, etc.
 If it returns a Promise, it will be awaited.
 
-### postSaveHook(id, record)
+### async shouldSave(formattedItem)
+This an optional method allows you to validate if saving the item is really necessary.  
+This method is called **after** formatting the item with `format()`.  
+If you return **false**, the model will not be called for `insert` the new item or `update` the current. The API will response **200** adding the `id` if received.
+
+### async getCurrent()
+You can use this to obtain the current item for DB. It only works when the API receives the `id` in the Endpoint (API PUT or PATCH)  
+**This method will throw an Error if is used in an API POST (without `recordId`)**
+
+### async postSaveHook(id, record)
 You can use this to perform a task after saving your main record. For example, emitting an event, logging something, etc.
 If it returns a Promise, it will be awaited.
