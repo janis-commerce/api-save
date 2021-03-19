@@ -1323,7 +1323,7 @@ describe('API Save', () => {
 		});
 	});
 
-	describe('Process with shouldSave method and using getCurrent', () => {
+	describe('Process with shouldSave', () => {
 
 		class MyApiSaveWithShouldSave extends ApiSaveData {
 
@@ -1372,10 +1372,53 @@ describe('API Save', () => {
 				id: '9'
 			});
 
+			sinon.assert.calledOnceWithExactly(Model.prototype.getById, '9');
+
 			assert.deepStrictEqual(apiSave.response.body, {
 				id: '9'
 			});
+		});
 
+		it('should only hit one time at the model when using getCurrent several times', async () => {
+
+			const apiSave = new MyApiSaveWithShouldSave();
+
+			Model.prototype.getById.returns({
+				name: 'The name',
+				otherField: 'foo',
+				extraField: 321
+			});
+
+			Model.prototype.update.resolves(1);
+
+			apiSave.endpoint = '/api/some-entity/9';
+			apiSave.data = {
+				name: 'The name',
+				otherField: 'foo'
+			};
+
+			const validation = await apiSave.validate();
+
+			assert.strictEqual(validation, undefined);
+
+			await apiSave.getCurrent();
+			await apiSave.getCurrent();
+			await apiSave.getCurrent();
+			await apiSave.getCurrent();
+
+			await apiSave.process();
+
+			sinon.assert.calledOnceWithExactly(Model.prototype.update, {
+				name: 'The name',
+				otherField: 'foo',
+				extraField: 123
+			}, {
+				id: '9'
+			});
+
+			sinon.assert.calledOnceWithExactly(Model.prototype.getById, '9');
+
+			assert.deepStrictEqual(apiSave.response.body, { id: '9' });
 		});
 
 		it('shouldn\'t save when current has the same data', async () => {
@@ -1429,6 +1472,32 @@ describe('API Save', () => {
 			sinon.assert.notCalled(Model.prototype.getById);
 			sinon.assert.notCalled(Model.prototype.insert);
 			sinon.assert.notCalled(Model.prototype.update);
+		});
+
+		it('shouldn\'t save if apis says so and set 204 code when is an API Post', async () => {
+
+			class MyApiPost extends ApiSaveData {
+
+				shouldSave() {
+					return false;
+				}
+			}
+
+			const apiSave = new MyApiPost();
+
+			apiSave.endpoint = '/api/some-entity';
+			apiSave.data = { name: 'The name' };
+
+			const validation = await apiSave.validate();
+
+			assert.strictEqual(validation, undefined);
+
+			await apiSave.process();
+
+			sinon.assert.notCalled(Model.prototype.insert);
+
+			assert.deepStrictEqual(apiSave.response.body, {});
+			assert.deepStrictEqual(apiSave.response.code, 204);
 		});
 	});
 });

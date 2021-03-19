@@ -114,7 +114,8 @@ If it returns a Promise, it will be awaited.
 ### async shouldSave(formattedItem)
 This an optional method allows you to validate if saving the item is really necessary.  
 This method is called **after** formatting the item with `format()`.  
-If you return **false**, the model will not be called for `insert` the new item or `update` the current. The API will response **200** adding the `id` if received.
+- If you return **false**, the model will not be called for `insert` the new item or `update` the current. The API will response the status code **200** adding the `id` if received at the response body.  
+- If you return **false** on an **API Post** (without `recordId`) the API will set the status code `204 No Content` .
 
 ### async getCurrent()
 You can use this to obtain the current item for DB. It only works when the API receives the `id` in the Endpoint (API PUT or PATCH)  
