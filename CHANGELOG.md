@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [6.1.1] - 2021-10-26
 ### Fixed
 - Fixed error message when a duplicated key error happens and database message has an invalid JSON
 
