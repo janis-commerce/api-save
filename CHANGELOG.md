@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Fixed
+- Fixed error message when a duplicated key error happens and database message has an invalid JSON
+
 ## [6.1.0] - 2021-03-19
 ### Added
 - Method `getCurrent` for getting current item easily
