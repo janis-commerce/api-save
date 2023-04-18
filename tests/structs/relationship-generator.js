@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('assert');
-const { struct } = require('superstruct');
+const { struct } = require('@janiscommerce/superstruct');
 
 const { RelationshipGenerator } = require('../..');
 

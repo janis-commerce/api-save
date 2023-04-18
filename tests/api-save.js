@@ -4,7 +4,7 @@ const assert = require('assert');
 const path = require('path');
 
 const mockRequire = require('mock-require');
-const { struct } = require('superstruct');
+const { struct } = require('@janiscommerce/superstruct');
 
 const sinon = require('sinon');
 

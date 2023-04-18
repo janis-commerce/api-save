@@ -16,7 +16,7 @@ npm install @janiscommerce/api-save
 'use strict';
 
 const { ApiSaveData } = require('@janiscommerce/api-save');
-const { struct } = require('superstruct');
+const { struct } = require('@janiscommerce/superstruct');
 
 const MyRelatedModel = require('../../models/my-related-model');
 const someAsyncTask = require('./async-task');
@@ -71,7 +71,7 @@ module.exports = class MyApiSaveData extends ApiSaveData {
 	postSaveHook(id, savedData) {
 		return someAsyncTask(id, savedData);
 	}
-	
+
 };
 ```
 
@@ -112,13 +112,13 @@ You can use this to format your main record before it's saved. For example, mapp
 If it returns a Promise, it will be awaited.
 
 ### async shouldSave(formattedItem)
-This an optional method allows you to validate if saving the item is really necessary.  
-This method is called **after** formatting the item with `format()`.  
-- If you return **false**, the model will not be called for `insert` the new item or `update` the current. The API will response the status code **200** adding the `id` if received at the response body.  
+This an optional method allows you to validate if saving the item is really necessary.
+This method is called **after** formatting the item with `format()`.
+- If you return **false**, the model will not be called for `insert` the new item or `update` the current. The API will response the status code **200** adding the `id` if received at the response body.
 - If you return **false** on an **API Post** (without `recordId`) the API will set the status code `204 No Content` .
 
 ### async getCurrent()
-You can use this to obtain the current item for DB. It only works when the API receives the `id` in the Endpoint (API PUT or PATCH)  
+You can use this to obtain the current item for DB. It only works when the API receives the `id` in the Endpoint (API PUT or PATCH)
 **This method will throw an Error if is used in an API POST (without `recordId`)**
 
 ### async postSaveHook(id, record)
