@@ -21,7 +21,7 @@
   "homepage": "https://github.com/janis-commerce/api-save#readme",
   "devDependencies": {
     "eslint": "^8.1.0",
-    "eslint-config-airbnb-base": "^13.2.0",
+    "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.25.2",
     "husky": "^8.0.3",
     "mocha": "^10.2.0",
@@ -42,5 +42,8 @@
     "@janiscommerce/api": "^8.0.0",
     "@janiscommerce/superstruct": "^1.2.1",
     "lodash.isequal": "4.5.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

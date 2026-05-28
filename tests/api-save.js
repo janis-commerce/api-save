@@ -1092,7 +1092,6 @@ describe('API Save', () => {
 				}
 			}
 
-
 			Model.prototype.insert.returns('10');
 
 			const apiSave = new MyApiSaveWithStructAndFormat();
@@ -1142,7 +1141,6 @@ describe('API Save', () => {
 					};
 				}
 			}
-
 
 			Model.prototype.insert.returns('10');
 
